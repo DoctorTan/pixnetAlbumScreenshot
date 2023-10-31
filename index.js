@@ -1,12 +1,18 @@
 const puppeteer = require('puppeteer');
 const path = require('path');
 const fs = require('fs');
-
-let link = 'https://abbey1117.pixnet.net/album/list'
-
-let i = 0
+//////////////////////////////////////////////////////////////////
+// 只需要在这里填入相册地址就行, 多相册或单相册都可以
+let link = 'https://xxx.pixnet.net/album/list'
+//////////////////////////////////////////////////////////////////
+if (link.includes("album/list")) {
+  console.log('解析到是多相册');
+  getAlbumList(link)
+} else {
+  console.log('解析到是单相册');
+  getScreenHot(link)
+}
 async function getAlbumList(link) {
-
   //开始时间
   const startTime = new Date();
   const browser = await puppeteer.launch({ headless: false });
@@ -60,7 +66,6 @@ async function getAlbumList(link) {
     console.log('全部执行完,花费', timeTaken / 1000, '秒');
   })
   browser.close()
-
 }
 
 
@@ -68,13 +73,15 @@ async function getScreenHot(link, userAlbumName, index) {
   if (!index) {
     index = 1
   }
+  if (!userAlbumName) {
+    userAlbumName = ''
+  }
   const browser = await puppeteer.launch({ headless: false });
   const page = await browser.newPage();
   await page.setViewport({
     width: 1270,
     height: 1080,
     isLandscape: true
-
   });
   await page.goto(link);
   let { albumName, nextlink } = await page.evaluate(async () => {
@@ -84,17 +91,16 @@ async function getScreenHot(link, userAlbumName, index) {
     const secondLink = breadcrumbElement.querySelectorAll('a')[1];
     const albumName = secondLink.innerText;
     console.log(albumName);
-    // const albumName = secondLink.textContent;
     return { nextlink: element.href, albumName }; // 获取 href 属性值
   })
 
   //处理特殊字符
   albumName = filterPathName(albumName)
   const dir = path.join(process.cwd(), userAlbumName, albumName);
-  // if (!fs.existsSync(dir)) {
-  //   fs.mkdirSync(dir);
-  //   console.log(`创建文件夹:   ${dir}  成功`);
-  // }
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir);
+    console.log(`创建文件夹:   ${dir}  成功`);
+  }
 
   //准备截图
   await autoScroll(page)
@@ -109,11 +115,6 @@ async function getScreenHot(link, userAlbumName, index) {
   }
   return 'ok'
 }
-// getScreenHot('https://abbey1117.pixnet.net/album/set/14245552')
-// getScreenHot('https://abbey1117.pixnet.net/album/set/14245552?after=104096618')
-getAlbumList(link)
-
-
 
 async function autoScroll(page) {
   return page.evaluate(() => {
