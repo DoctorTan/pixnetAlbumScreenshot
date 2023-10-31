@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 //////////////////////////////////////////////////////////////////
 // 只需要在这里填入相册地址就行, 多相册或单相册都可以
-let link = 'https://xxx.pixnet.net/album/list'
+let link = 'https://y1117.pixnet.net/album/list'
 //////////////////////////////////////////////////////////////////
 if (link.includes("album/list")) {
   console.log('解析到是多相册');
@@ -12,6 +12,7 @@ if (link.includes("album/list")) {
   console.log('解析到是单相册');
   getScreenHot(link)
 }
+//解析多相册
 async function getAlbumList(link) {
   //开始时间
   const startTime = new Date();
@@ -104,6 +105,8 @@ async function getScreenHot(link, userAlbumName, index) {
 
   //准备截图
   await autoScroll(page)
+  // 延迟几秒再截图
+  await wait(5000)
   await page.screenshot({
     path: `${dir}/${albumName}-${index}.png`, fullPage: true
   });
@@ -136,5 +139,9 @@ async function autoScroll(page) {
 //过滤名字
 function filterPathName(albumName) {
   const specialCharsRegex = /[<>:"\/\\|?*\x00-\x1F]/g;
-  return albumName.replace(specialCharsRegex, '');
+  return albumName.replace(specialCharsRegex, '').trim();
+}
+//用来做延迟
+function wait(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
