@@ -1,10 +1,10 @@
-const puppeteer = require('puppeteer');
+ const puppeteer = require('puppeteer');
 const path = require('path');
 const fs = require('fs');
 //////////////////////////////////////////////////////////////////
 // 只需要在这里填入相册地址就行, 多相册或单相册都可以
 // let link = 'https://xxx.pixnet.net/album/set/14245552'
-let link = 'https://xxx.pixnet.net/album/list'
+let link = 'https://xxxx.pixnet.net/album/list'
 //如果是多相册的话需要并发地截图,这里填入同时截屏的相册数,不要加太多,默认是3个相册
 let limit = 3
 //////////////////////////////////////////////////////////////////
@@ -21,7 +21,7 @@ if (link.includes("album/list")) {
 const startTime = new Date();
 async function getAlbumList(link) {
   //开始时间  
-  const browser = await puppeteer.launch({ headless: true });
+  const browser = await puppeteer.launch({ headless: true,args: ['--no-sandbox'] });
   const page = await browser.newPage();
   await page.goto(link);
   // 返回一个包含相册名和相册连接的
@@ -87,7 +87,7 @@ async function getScreenHot(link, userAlbumName, index) {
   if (!userAlbumName) {
     userAlbumName = ''
   }
-  const browser = await puppeteer.launch({ headless: true });
+  const browser = await puppeteer.launch({ headless: true,args: ['--no-sandbox'] });
   const page = await browser.newPage();
   // await page.setViewport({
   //   width: 1270,
