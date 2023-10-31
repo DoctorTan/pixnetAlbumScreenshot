@@ -8,7 +8,9 @@ https://nodejs.org/en
 ```
 
 如果是linux系統,先安装谷歌瀏覽器的依賴.linux用戶下載linux分支的index.js不然無法運行 
-我在linux運行截屏有點問題,不知你們有沒有, 就是文字不顯示. win用戶可以跳過這一步
+我在linux運行截屏有點問題,不知你們有沒有, 就是文字不顯示,可以參考這個來修改字體
+https://www.cnblogs.com/ghostmen/p/17513432.html
+win用戶可以跳過這一步
 ```undefined
 sudo yum install -y chromium
 ```
