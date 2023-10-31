@@ -3,19 +3,23 @@ const path = require('path');
 const fs = require('fs');
 //////////////////////////////////////////////////////////////////
 // 只需要在这里填入相册地址就行, 多相册或单相册都可以
-let link = 'https://y1117.pixnet.net/album/list'
+let link = 'https://xxxx.pixnet.net/album/set/16006416'
+//如果是多相册的话需要并发地截图,这里填入同时截屏的相册数,不要加太多,默认是3个相册;單相冊可忽略
+let limit = 3
 //////////////////////////////////////////////////////////////////
+let single = false
 if (link.includes("album/list")) {
   console.log('解析到是多相册');
   getAlbumList(link)
 } else {
   console.log('解析到是单相册');
+  single = true
   getScreenHot(link)
 }
 //解析多相册
+const startTime = new Date();
 async function getAlbumList(link) {
-  //开始时间
-  const startTime = new Date();
+  //开始时间  
   const browser = await puppeteer.launch({ headless: false });
   const page = await browser.newPage();
   await page.goto(link);
@@ -41,32 +45,37 @@ async function getAlbumList(link) {
     // console.log(AlbumNamelist);
     return { linkList, AlbumNamelist, userAlbumName }; // 获取 href 属性值
   })
+  // 过滤非法字符
   albumInfoList.userAlbumName = filterPathName(albumInfoList.userAlbumName)
+  // 先创建用户文件夹
   const useDir = path.join(process.cwd(), albumInfoList.userAlbumName);
   if (!fs.existsSync(useDir)) {
     fs.mkdirSync(useDir);
     console.log(`创建用户文件夹:   ${useDir}  成功`);
   }
-  //这里已经获取相册列表
-  let AlbumPromise = []
-  for (let i = 0; i < albumInfoList.AlbumNamelist.length; i++) {
-    // 创建文件夹
-    const albumName = filterPathName(albumInfoList.AlbumNamelist[i])
-    const dir = path.join(process.cwd(), albumInfoList.userAlbumName, albumName);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir);
-      console.log(`创建文件夹:   ${dir}  成功`);
-    }
-    //实现相册截图
-    AlbumPromise.push(getScreenHot(albumInfoList.linkList[i], albumInfoList.userAlbumName))
+  //  然后切割数组,并发
+  let chunks = [];//把所有的chunk切割成弄成一个集合
+  let AllChunksPromise = [];//当前统计所有执行完成时间
+  //先把切割成小数组
+  for (let i = 0; i < albumInfoList.linkList.length; i += limit) {
+    let chunk = albumInfoList.linkList.slice(i, i + limit);
+    chunks.push(chunk)
   }
-  // console.log(AlbumPromise);
-  Promise.all(AlbumPromise).then(res => {
-    const endTimeCollect = new Date();
-    const timeTaken = endTimeCollect - startTime;
-    console.log('全部执行完,花费', timeTaken / 1000, '秒');
-  })
   browser.close()
+  for (let i = 0; i < chunks.length; i++) {
+    let promiseChunk = []
+    chunks[i].forEach(item => {
+      promiseChunk.push(getScreenHot(item, albumInfoList.userAlbumName))
+      AllChunksPromise.push(promiseChunk)
+    })
+    await Promise.all(promiseChunk);
+  }
+
+  await Promise.all(AllChunksPromise.flat());
+  const endTimeCollect = new Date();
+  const timeTaken = endTimeCollect - startTime;
+  console.log('全部执行完,花费', timeTaken / 1000, '秒');
+
 }
 
 
@@ -106,7 +115,7 @@ async function getScreenHot(link, userAlbumName, index) {
   //准备截图
   await autoScroll(page)
   // 延迟几秒再截图
-  await wait(5000)
+  await wait(2000)
   await page.screenshot({
     path: `${dir}/${albumName}-${index}.png`, fullPage: true
   });
@@ -115,6 +124,12 @@ async function getScreenHot(link, userAlbumName, index) {
   if (nextlink) {
     // console.log('立刻执行');
     await getScreenHot(nextlink, userAlbumName, ++index)
+  }
+  //如果是单相册就判断
+  if (single) {
+    const endTimeCollect = new Date();
+    const timeTaken = endTimeCollect - startTime;
+    console.log('单相册全部执行完,花费', timeTaken / 1000, '秒');
   }
   return 'ok'
 }
@@ -139,7 +154,7 @@ async function autoScroll(page) {
 //过滤名字
 function filterPathName(albumName) {
   const specialCharsRegex = /[<>:"\/\\|?*\x00-\x1F]/g;
-  return albumName.replace(specialCharsRegex, '').trim();
+  return albumName.trim().replace(specialCharsRegex, '');
 }
 //用来做延迟
 function wait(ms) {
